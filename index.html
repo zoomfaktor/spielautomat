@@ -1911,7 +1911,7 @@ const Ton = (() => {
     const W = C.walzen.streifen;
     if (s === "walzen") { stops = [finde(W[0], "cherry"), finde(W[1], "seven"), finde(W[2], "bell")]; z.sonder = 12; }
     if (s === "risiko") { stops = [finde(W[0], "lemon"), finde(W[1], "lemon"), finde(W[2], "lemon")]; }
-    if (s === "aussp") { stops = [finde(W[0], "seven"), finde(W[1], "seven"), finde(W[2], "seven")]; }
+    if (s === "aussp" || s === "film-aussp") { stops = [finde(W[0], "seven"), finde(W[1], "seven"), finde(W[2], "seven")]; }
     if (s === "zusatz") { stops = [finde(W[0], "bar"), finde(W[1], "bar"), finde(W[2], "bar")]; }
     if (s === "halten") { stops = [finde(W[0], "plum"), finde(W[1], "plum"), finde(W[2], "lemon")]; }
     if (s === "scheiben") { stops = [2, 5, 8]; z.sonder = 25; z.serie = 0; }
@@ -1934,6 +1934,7 @@ const Ton = (() => {
     if (s === "teilen") { linieBlink(0); risikoStart("aussp", 3); teilen(); }
     // Für Video-Aufnahmen: nach kurzer Pause von selbst ein Spiel starten
     if (s === "film" || s === "scheiben-film") setTimeout(() => start(), +(params.get("warte") || 1500));
+    if (s === "film-aussp") setTimeout(() => { linieBlink(0); planAn(0); gewinnBehandeln({ typ: "aussp" }); }, +(params.get("warte") || 800));
     if (s === "rmenue")document.dispatchEvent(new MouseEvent("contextmenu", { clientX: 700, clientY: 400, bubbles: true, cancelable: true }));
     if (s === "menue") menueAuf();
     if (s === "plan") zettelAuf("plan");
@@ -2025,6 +2026,46 @@ const Ton = (() => {
   }
 
   einrichten();
+})();
+
+// ============================================================
+//  BESUCHERZÄHLER (ohne Konto, ohne persönliche Daten)
+//  - Gezählt wird nur auf der öffentlichen Webseite (github.io).
+//  - Jeder Browser wird nur ein einziges Mal gezählt.
+//  - Eigener Browser: einmal die Seite mit ?ich=1 öffnen, dann wird man nie gezählt.
+//  - Zahl ansehen: Seite mit ?zahl öffnen.
+// ============================================================
+(function () {
+  const BASIS = "https://abacus.jasoncameron.dev";
+  const NAME = "zoomfaktor-spielautomat";
+  const KEY = "besucher";
+  const ls = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  };
+  const q = new URLSearchParams(location.search);
+
+  if (q.has("ich")) ls.set("zf-ich", "1");
+
+  if (q.has("zahl")) {
+    fetch(BASIS + "/get/" + NAME + "/" + KEY)
+      .then(r => r.json())
+      .then(d => {
+        const el = document.createElement("div");
+        el.textContent = "Besucher bisher: " + (d.value || 0);
+        el.style.cssText = "position:fixed;top:10px;left:10px;z-index:99999;padding:10px 16px;" +
+          "background:#000;color:#fff;border:2px solid #fff;font:bold 22px sans-serif;border-radius:8px";
+        document.body.appendChild(el);
+      })
+      .catch(() => {});
+    return;
+  }
+
+  if (!/\.github\.io$/.test(location.hostname)) return;  // nur die öffentliche Seite
+  if (ls.get("zf-ich") || ls.get("zf-gezaehlt")) return; // du selbst oder schon gezählt
+  fetch(BASIS + "/hit/" + NAME + "/" + KEY)
+    .then(r => { if (r.ok) ls.set("zf-gezaehlt", "1"); })
+    .catch(() => {});
 })();
 
 </script>
